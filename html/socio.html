@@ -1,0 +1,33 @@
+<!-- 
+    Versión inicial del formulario para la adición/actualización de clientes. Complementar debidamente.
+    Note que cada <input> tiene un ID que lo identifica de manera única.
+    Consulte en https://www.w3schools.com/html/html_form_input_types.asp los tipos de cada <input>
+    Consulte también en https://www.w3schools.com/html/html_form_attributes.asp los atributos utlizados aquí
+    https://www.youtube.com/watch?v=hl_Twm8PJec (validaciones)
+    https://lenguajehtml.com/html/validaciones/validaciones-html5/ (validaciones)
+ -->
+<form id="form-socio">
+  <fieldset>
+    <!-- IMPORTANTE: no es necesario mostrar el ID de los clientes, por eso type="hidden"  -->
+    <div class="form-group mx-2">
+      <label for="id" class="form-label mt-0 mb-0">Identificación</label>
+      <input type="text" class="form-control" id="id" name="id" maxlength="12" minlength="12" required />
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="nombre" class="form-label mt-0 mb-0">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" required />
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="direccion" class="form-label mt-0 mb-0">Dirección</label>
+      <input type="text" class="form-control" id="direccion" name="direccion" required />
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="telefono" class="form-label mt-2 mb-0">Teléfono</label>
+      <input type="text" class="form-control" id="telefono" name="telefono" required />
+    </div>
+
+  </fieldset>
+</form>

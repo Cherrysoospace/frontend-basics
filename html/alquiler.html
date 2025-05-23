@@ -1,0 +1,105 @@
+<!-- 
+    Formulario para la adición y edición de alquileres
+    Note que cada <input> tiene un ID que lo identifica de manera única.
+    Consulte en https://www.w3schools.com/html/html_form_input_types.asp los tipos de cada <input>
+    Consulte también en https://www.w3schools.com/html/html_form_attributes.asp los atributos utilizados aquí
+    https://www.youtube.com/watch?v=hl_Twm8PJec (validaciones)
+    https://lenguajehtml.com/html/validaciones/validaciones-html5/ (validaciones)
+ -->
+<!-- 
+    Formulario para la adición y edición de alquileres
+    Note que cada <input> tiene un ID que lo identifica de manera única.
+    Consulte en https://www.w3schools.com/html/html_form_input_types.asp los tipos de cada <input>
+    Consulte también en https://www.w3schools.com/html/html_form_attributes.asp los atributos utilizados aquí
+    https://www.youtube.com/watch?v=hl_Twm8PJec (validaciones)
+    https://lenguajehtml.com/html/validaciones/validaciones-html5/ (validaciones)
+ -->
+<form id="form-alquiler">
+  <fieldset>
+    <!-- Campo ID - oculto como en el formulario de socio -->
+    <div class="form-group mx-2">
+      <input type="hidden" class="form-control" id="id" name="id" />
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="fechaHoraInicio" class="form-label mt-0 mb-0">Fecha y Hora de Inicio</label>
+      <input 
+        type="datetime-local" 
+        class="form-control" 
+        id="fechaHoraInicio" 
+        name="fechaHoraInicio" 
+        required 
+      />
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="fechaHoraFin" class="form-label mt-2 mb-0">Fecha y Hora de Fin</label>
+      <input 
+        type="datetime-local" 
+        class="form-control" 
+        id="fechaHoraFin" 
+        name="fechaHoraFin" 
+        required 
+      />
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="socio" class="form-label mt-2 mb-0">Socio</label>
+      <select class="form-select" id="socio" name="socio" required>
+        <option value="">Seleccione un socio...</option>
+        <!-- Las opciones se llenarán dinámicamente desde JavaScript -->
+      </select>
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="instalacion" class="form-label mt-2 mb-0">Instalación Deportiva</label>
+      <select class="form-select" id="instalacion" name="instalacion" required>
+        <option value="">Seleccione una instalación...</option>
+        <!-- Las opciones se llenarán dinámicamente desde JavaScript -->
+      </select>
+    </div>
+
+    <!-- Campos calculados automáticamente -->
+    <div class="form-group mx-2">
+      <label for="horas" class="form-label mt-2 mb-0">Horas</label>
+      <input 
+        type="number" 
+        class="form-control" 
+        id="horas" 
+        name="horas" 
+        step="0.5" 
+        min="0.5" 
+        max="24" 
+        readonly 
+      />
+      <small class="form-text text-muted">Se calcula automáticamente</small>
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="valorHora" class="form-label mt-2 mb-0">Valor por Hora</label>
+      <input 
+        type="number" 
+        class="form-control" 
+        id="valorHora" 
+        name="valorHora" 
+        step="0.01" 
+        readonly 
+      />
+      <small class="form-text text-muted">Según la instalación</small>
+    </div>
+
+    <div class="form-group mx-2">
+      <label for="valorAlquiler" class="form-label mt-2 mb-0">Valor Total</label>
+      <input 
+        type="number" 
+        class="form-control" 
+        id="valorAlquiler" 
+        name="valorAlquiler" 
+        step="0.01" 
+        readonly 
+      />
+      <small class="form-text text-muted">Se calcula automáticamente</small>
+    </div>
+
+  </fieldset>
+</form>

@@ -1,0 +1,72 @@
+<!-- 
+    Formulario para la adición y edición de cajas
+    Note que cada <input> tiene un ID que lo identifica de manera única.
+    Consulte en https://www.w3schools.com/html/html_form_input_types.asp los tipos de cada <input>
+    Consulte también en https://www.w3schools.com/html/html_form_attributes.asp los atributos utlizados aquí
+    https://www.youtube.com/watch?v=hl_Twm8PJec (validaciones)
+    https://lenguajehtml.com/html/validaciones/validaciones-html5/ (validaciones)
+    Con base en este formulario puede implementar los demás que se requieren
+ -->
+<form id="form-instalacion">
+  <fieldset>
+    <div id="div-peso-valor" class="row mx-1 my-2">
+      <div class="col">
+        <div class="form-group">
+          <label for="id" class="form-label mt-0 mb-0">ID</label>
+          <input type="text" class="form-control" id="id" name="id" required />
+        </div>
+      </div>
+
+      <!-- ver https://www.w3schools.com/tags/att_data-.asp -->
+      <div data-mode="piscina" style="display:none">
+        <!-- esta capa sólo será visible para los sobres -->
+        <div class="form-group mt-4 pt-2 float-end">
+          <label for="olimpica" class="form-check-label">Piscina olímpica</label>
+          <input type="checkbox" class="form-check-input ms-2" name="olimpica" id="olimpica" />
+        </div>
+      </div>
+
+      <div data-mode="canchamultiproposito" style="display:none">
+        <!-- esta capa sólo será visible para los sobres -->
+        <div class="form-group mt-4 pt-2 float-end">
+          <label for="graderias" class="form-check-label">Cancha con graderías</label>
+          <input type="checkbox" class="form-check-input ms-2" name="graderias" id="graderias" />
+        </div>
+      </div>
+
+      <div data-mode="canchatennis" style="display:none">
+        <!-- esta capa sólo será visible para los sobres -->
+        <div class="form-group">
+          <label for="tipocancha" class="form-label my-0">Tipo de cancha</label>
+          <select class="form-select" id="tipocancha" name="tipocancha"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mx-1 my-0">
+      <div class="col">
+        <div class="form-group">
+          <label for="largo" class="form-label my-0">Largo</label>
+          <input type="number" class="form-control" id="largo" name="largo" placeholder="En metros" min="1.2" step="0.1" max="120" required />
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="form-group">
+          <label for="ancho" class="form-label my-0">Ancho</label>
+          <input type="number" class="form-control" id="ancho" name="ancho" placeholder="En metros" min="1.2" max="90" step="0.1" required />
+        </div>
+      </div>
+    </div>
+
+    <div class="row mx-1 mt-2">
+      <div class="col">
+        <div class="form-group">
+          <label for="descripcion" class="form-label my-0">Descripción</label>
+          <input type="text" class="form-control" id="descripcion" name="descripcion" minlength="15" maxlength="300" required />
+        </div>
+      </div>
+    </div>
+
+  </fieldset>
+</form>
