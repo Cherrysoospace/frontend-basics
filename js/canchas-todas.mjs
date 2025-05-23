@@ -23,7 +23,7 @@ export default class CanchasTodas {
         data: response.data,
         layout: 'fitColumns',
         responsiveLayout: 'hide',
-        locale: true,
+        locale: "es-419", // utilizar la configuración de idioma local
         langs: { es: es419 },
         pagination: 'local',
         paginationSize: 7,

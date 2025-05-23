@@ -1,98 +1,306 @@
 export default class Instalacion {
-
-  
-  static #mode //atributo de clase privado
+  static #mode
   static #table
+  static #form //atributo para asignar el codigo html del formulario
+  static #option
+  static #modal
+  static #typeList
+  static #types
+  static #tipos // array de tipos de canchas de tenis
+  static #currentOption // referencia la opción de adición o edición actual
+
+  /**
+   * locale: "es-419", // utilizar la configuración de idioma local
+        langs: { es: es419 },
+   */
 
   constructor() {
-    
     throw new Error('No requiere instancias, todos los métodos son estáticos. Use Instalacion.init()')
   }
 
-  static async init(mode = '') {
+ static async init(mode = '', option = '') {
+    console.clear()
     Instalacion.#mode = mode
-  try {
-    // intentar cargar los datos de los tipos de canchas
-    const response = await Helpers.fetchJSON(`${urlAPI}/${mode}`)
+    Instalacion.#option = option
 
-    if (response.message !== 'ok') {
-      throw new Error(response.message)
+    try {
+      // intentar cargar el formulario de edición de instalaciones: piscinas|canchas de tenis|canchas múltiples
+      Instalacion.#form = await Helpers.fetchText('./resources/html/instalacion.html')
+
+      // hacer visible uno de los campos ocultos según el tipo de instalación deportiva
+      Instalacion.#form = Instalacion.#form.replace(`data-mode="${mode}"`, 'class="col-6" style="display:block"')
+      Instalacion.#option = option
+
+      // cargar los datos de tipos de canchas para crear un select con ellos
+      let response = await Helpers.fetchJSON(`${urlAPI}/canchas/tipos`)
+      if (response.message != 'ok') {
+        throw new Exception(response)
+      }
+
+      Instalacion.#tipos = response.data
+      // crear las opciones para el select de tipos de canchas
+      Instalacion.#typeList = Helpers.toOptionList({
+        items: Instalacion.#tipos,
+        value: 'key',
+        text: 'value',
+        firstOption: 'Seleccione un tipo de cancha',
+      })
+
+      // intentar cargar los datos de los instalaciones
+      response = await Helpers.fetchJSON(`${urlAPI}/${mode}`)
+
+      if (response.message !== 'ok') {
+        throw new Error(response.message)
+      }
+
+      // agregar al <main> de index.html la capa que contendrá la tabla
+      document.querySelector('main').innerHTML = `
+        <div class="p-1 w-full">
+            <div id="table-container" class="m-1"></div>
+        </dv>`
+
+      // ver en https://tabulator.info/docs/6.3/columns#definition cómo se definen las propiedades de las columnas
+      // ver en https://tabulator.info/docs/6.3/format los diferentes valores de la propiedad formater de las columnas
+      Instalacion.#table = new Tabulator('#table-container', {
+        height: tableHeight, // establecer la altura de la tabla, esto habilita el DOM virtual y mejora drásticamente la velocidad de procesamiento
+        data: response.data, // asignar los datos a la tabla
+        layout: 'fitColumns', // ajustar columnas al ancho disponible
+        columns: [
+          // definir las columnas de la tabla
+          { formatter: editRowButton, width: 40, hozAlign: 'center', cellClick: Instalacion.#editRowClick },
+          { formatter: deleteRowButton, width: 40, hozAlign: 'center', cellClick: Instalacion.#deleteRowClick },
+          { title: 'ID', field: 'id', width: 70, hozAlign: 'center' },
+          { title: 'ANCHO', field: 'ancho', hozAlign: 'center', width: 95, formatter: 'money' }, // No se indica width, utilizar el ancho remanente
+          { title: 'LARGO', field: 'largo', hozAlign: 'center', width: 95, formatter: 'money' },
+          { title: 'ÁREA', field: 'area', hozAlign: 'right', width: 80, formatter: 'money' },
+          { title: 'Vr. HORA', field: 'valorHora', hozAlign: 'center', width: 110, formatter: 'money' },
+          Instalacion.#column(),
+          { title: 'DESCRIPCION', field: 'descripcion', hozAlign: 'left' },
+        ],
+        responsiveLayout: false, // activado el scroll horizontal, también: ['hide'|true|false]
+        initialSort: [
+          // establecer el ordenamiento inicial de los datos
+          { column: 'id', dir: 'asc' },
+        ],
+        columnDefaults: {
+          tooltip: true, // mostrar información sobre la celda actual
+        },
+        pagination: 'local', // paginar la data
+        paginationSize: 15, // permitir ## filas por páginas
+        paginationCounter: 'rows', // mostrar el contador de filas paginadas en el pie página
+        locale: "es-419",
+        langs: { es: es419 }, // utilizar español, también puede servir { 'es': es419 }
+        // mostrar al final de la tabla un botón para agregar registros
+        footerElement: addRowButton,
+      })
+
+      // agregar un gestor de eventos al botón 'add-row' para mostrar el formulario en donde se ingresarán instalaciones
+      Instalacion.#table.on('tableBuilt', () => document.querySelector('#add-row').addEventListener('click', Instalacion.#addRow))
+    } catch (e) {
+      Toast.show({ title: 'Ventas', message: e.message, mode: 'danger', error: e })
     }
 
-    // agregar al <main> de index.html la capa que contendrá la tabla
-    document.querySelector('main').innerHTML = `
-      <div class="p-1 w-full">
-          <div id="table-container" class="m-1"></div>
-      </dv>`
+    return this
+  }
 
-    // ver https://tabulator.info/docs/6.3/columns#definition 
-    // ver https://tabulator.info/docs/6.3/format 
-    Instalacion.#table = new Tabulator('#table-container', {
-    height: tableHeight,
-    data: response.data,
-    locale: true, // utilizar la configuración de idioma local
-    langs: { es: es419 }, // utilizar el código de idioma impo
-    layout:"fitColumns",      //fit columns to width of table
-    responsiveLayout:"hide",  //hide columns that don't fit on the table
-    addRowPos:"top",          //when adding a new row, add it to the top of the table
-    history:true,             //allow undo and redo actions on the table
-    pagination:"local",       //paginate the data
-    paginationSize:7,         //allow 7 rows per page of data
-    paginationCounter:"rows", //display count of paginated rows in footer
-    movableColumns:true,      //allow column order to be changed
-    initialSort:[             //set the initial sort order of the data
-        {column:'id', dir:"asc"}, //Indica como se organiza la tabla
-    ],
-    columnDefaults:{
-        tooltip:true,         //show tool tips on cells
-    },
-      columns:[                 //define the table columns
-        {formatter: editRowButton, hozAlign: 'center', width: 50, cellClick: Instalacion.#editRowClick},
-        {formatter: deleteRowButton, hozAlign: 'center', width: 50, cellClick: Instalacion.#deleteRowClick},
-        {title:'ID', field:'id', hozAlign:'center', width: 95},
-        {title:'ANCHO', field:'ancho', hozAlign:'center', width: 95, formatter: 'money'},
-        {title:'LARGO', field:'largo', hozAlign:'center', width: 95,  formatter: 'money'},
-        {title:'AREA', field:'area', hozAlign:'center', width: 95,  formatter: 'money'},
-        {title:'Vr. HORA', field:'valorHora', hozAlign:'center', width: 95,  formatter: 'money', formatterParams: {precision: 0}},
-        Instalacion.#column(),
-        {title:'DESCRIPCION', field:'descripcion', hozAlign:'left'}
-    ],
-      responsiveLayout: false, // activado el scroll horizontal, también: ['hide'|true|false]
-      initialSort: [ // establecer el ordenamiento inicial de los datos
-        { column: 'value', dir: 'asc' },
+  static #column() {
+    if (Instalacion.#mode == 'piscina') {
+      return { title: 'OLÍMPICA', field: 'olimpica', width: 112, hozAlign: 'center', formatter: 'tickCross' }
+    } else if (Instalacion.#mode == 'canchamultiproposito') {
+      return { title: 'GRADERÍA', field: 'graderia', width: 112, hozAlign: 'center', formatter: 'tickCross' }
+    } else if (Instalacion.#mode == 'canchatennis') {
+      return { title: 'TIPO', field: 'tipoInstalacion', width: 174 }
+    }
+  }
+
+     static async #addRow() {
+    Instalacion.#currentOption = 'add'
+    Instalacion.#modal = new Modal({
+      classes: 'col-12 col-sm-10 col-md-9 col-lg-8 col-xl-7',
+      title: `<h5>Ingreso de ${Instalacion.#option}</h5>`,
+      content: Instalacion.#form,
+      buttons: [
+        { caption: addButton, classes: 'btn btn-primary me-2', action: () => Instalacion.#add() },
+        { caption: cancelButton, classes: 'btn btn-secondary', action: () => Instalacion.#modal.remove() },
       ],
-      columnDefaults: { 
-        tooltip: true  // mostrar información sobre las celdas
-      },
+      doSomething: Instalacion.#displayDataOnForm,
     })
-  } catch (e) {
-    Toast.show({ title: 'Ventas', message: e.message, mode: 'danger', error: e })
+
+    Instalacion.#modal.show()
+    return true
   }
 
-  return this
-}
+  static async #add() {
+    try {
+      // obtener del formulario el objeto con los datos que se envían a la solicitud POST
+      const body = Instalacion.#getFormData()
 
-static #column = () =>{
-    if (Instalacion.#mode == 'canchatennis') { //Preguntar por el triple igual, que es una comparacion fuerte
-     return {title:'TIPO', field:'tipoInstalacion'}
-    } else if (Instalacion.#mode == 'canchamultiproposito') { //Preguntar por el triple igual, que es una comparacion fuerte
-     return {title:'GRADERIA', field:'graderia', width: 112, hozAlign: 'center', formatter: 'tickCross'}
-    } else {
-      return {title:'OLIMPICA', field:'olimpica', width: 112, hozAlign: 'center', formatter: 'tickCross'}
+      // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
+      if (!Helpers.okForm('#form-instalacion')) {
+        return
+      }
+
+      // enviar la solicitud de creación con los datos del formulario
+      let response = await Helpers.fetchJSON(`${urlAPI}/${Instalacion.#mode}`, {
+        method: 'POST',
+        body,
+      })
+
+      if (response.message === 'ok') {
+        Instalacion.#table.addRow(response.data) // agregar la instalación a la tabla respectiva
+        Instalacion.#modal.remove()
+        Toast.show({ message: 'Registro agregado exitosamente' })
+      } else {
+        Toast.show({ message: 'No se pudo agregar el registro', mode: 'danger', error: response })
+      }
+    } catch (e) {
+      Toast.show({ message: 'Falló la creación del registro', mode: 'danger', error: e })
     }
   }
 
-  static #editRowClick = (e, cell)=>{
-    console.log('Editando el registro',cell.getRow().getData())
+  static #editRowClick = async (e, cell) => {
+    Instalacion.#currentOption = 'edit'
+
+    Instalacion.#modal = new Modal({
+      classes: 'col-12 col-sm-10 col-md-9 col-lg-8 col-xl-7',
+      title: `<h5>Actualización de ${Instalacion.#option}</h5>`,
+      content: Instalacion.#form,
+      buttons: [
+        { caption: editButton, classes: 'btn btn-primary me-2', action: () => Instalacion.#edit(cell) },
+        { caption: cancelButton, classes: 'btn btn-secondary', action: () => Instalacion.#modal.remove() },
+      ],
+      doSomething: idModal => Instalacion.#displayDataOnForm(idModal, cell.getRow().getData()),
+    })
+    Instalacion.#modal.show()
   }
 
-  static #deleteRowClick = (e, cell)=>{
-    console.log(`Eliminando el registro ${cell.getRow().getData().id}`)
-    //cellClick:function(e, cell){console.log("cell click")},
+  static async #edit(cell) {
+    try {
+      // obtener del formulario el objeto con los datos que se envían a la solicitud PATCH
+      const body = Instalacion.#getFormData()
+
+      // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
+      if (!Helpers.okForm('#form-instalacion')) {
+        return
+      }
+
+      // configurar la url para enviar la solicitud PATCH
+      const url = `${urlAPI}/${Instalacion.#mode}/${cell.getRow().getData().id}`
+
+      // intentar enviar la solicitud de actualización
+      let response = await Helpers.fetchJSON(url, {
+        method: 'PATCH',
+        body,
+      })
+
+      if (response.message === 'ok') {
+        Toast.show({ message: 'Instalación actualizada exitosamente' })
+        cell.getRow().update(response.data)
+        Instalacion.#modal.remove()
+      } else {
+        Toast.show({ message: 'Actualización fallida', mode: 'danger', error: response })
+      }
+    } catch (e) {
+      Toast.show({ message: 'Problemas al actualizar el registro', mode: 'danger', error: e })
+    }
   }
-   
+
+  static #deleteRowClick = async (e, cell) => {
+    Instalacion.#currentOption = 'delete'
+    Instalacion.#modal = new Modal({
+      classes: 'col-10 col-sm-8 col-md-6 col-lg-5 col-xl-4',
+      title: `<h5>Eliminación de ${Instalacion.#option}</h5>`,
+      content: `<span class="text-back dark:text-gray-300">
+                  Confirme la eliminación de:<br>
+                  ${cell.getRow().getData().id} – ${cell.getRow().getData().tipoInstalacion}<br>
+                  ${cell.getRow().getData().descripcion}<br>
+                </span>`,
+      buttons: [
+        { caption: deleteButton, classes: 'btn btn-primary me-2', action: () => Instalacion.#delete(cell) },
+        { caption: cancelButton, classes: 'btn btn-secondary', action: () => Instalacion.#modal.remove() },
+      ],
+    })
+    Instalacion.#modal.show()
+  }
+
+  static async #delete(cell) {
+    try {
+      const url = `${urlAPI}/${Instalacion.#mode}/${cell.getRow().getData().id}`
+
+      // enviar la solicitud de eliminación
+      let response = await Helpers.fetchJSON(url, {
+        method: 'DELETE',
+      })
+
+      if (response.message === 'ok') {
+        Toast.show({ message: 'Instalación eliminado exitosamente' })
+        cell.getRow().delete()
+        Instalacion.#modal.remove()
+      } else {
+        Toast.show({ message: response.message, mode: 'danger', error: response })
+      }
+    } catch (e) {
+      Toast.show({ message: 'Problemas al eliminar la instalación', mode: 'danger', error: e })
+    }
+  }
+
+  static #displayDataOnForm(idModal, rowData) {
+    const selectTipos = document.querySelector(`#${idModal} #tipocancha`)
+    if (Instalacion.#mode == 'canchatennis') {
+      selectTipos.innerHTML = Instalacion.#typeList
+    }
+
+    if (Instalacion.#currentOption === 'edit') {
+      // mostrar los datos de la fila actual en los input del formulario html
+      document.querySelector(`#${idModal} #id`).value = rowData.id
+      document.querySelector(`#${idModal} #descripcion`).value = rowData.descripcion
+      document.querySelector(`#${idModal} #ancho`).value = rowData.ancho
+      document.querySelector(`#${idModal} #largo`).value = rowData.largo
+
+      if (Instalacion.#mode == 'canchatennis') {
+        selectTipos.value = rowData.tipoCancha
+      } else if (Instalacion.#mode == 'canchamultiproposito') {
+        document.querySelector(`#${idModal} #graderias`).checked = rowData.graderia
+      } else {
+        document.querySelector(`#${idModal} #olimpica`).checked = rowData.olimpica
+      }
+    } else {
+      //document.querySelector(`#${idModal} #id`).value = Helpers.idRandom(5, 'IS')
+       document.querySelector(`#${idModal} #id`).value = Helpers.idRandom(5, 'SN')
+    }
+  }
+
+  /**
+   * Recupera los datos del formulario y crea un objeto para ser retornado
+   * @returns Un objeto con los datos del socio
+   */
+  static #getFormData() {
+    const data = {
+      id: document.querySelector(`#${Instalacion.#modal.id} #id`).value,
+      descripcion: document.querySelector(`#${Instalacion.#modal.id} #descripcion`).value,
+      ancho: Number(document.querySelector(`#${Instalacion.#modal.id} #ancho`).value),
+      largo: Number(document.querySelector(`#${Instalacion.#modal.id} #largo`).value),
+    }
+
+    if (Instalacion.#mode == 'canchatennis') {
+      const selectTipos = document.querySelector(`#${Instalacion.#modal.id} #tipocancha`)
+      // agregar un validador personalizado para el selector del tipo de cancha
+      if (!selectTipos.value) {
+        selectTipos.setCustomValidity('Por favor, seleccione un tipo de cancha')
+      } else {
+        selectTipos.setCustomValidity('') // Restablece la validez si la selección es válida
+      }
+      data.tipoCancha = selectTipos.value
+    } else if (Instalacion.#mode == 'canchamultiproposito') {
+      data.graderia = document.querySelector(`#${Instalacion.#modal.id} #graderias`).checked
+    } else {
+      data.olimpica = document.querySelector(`#${Instalacion.#modal.id} #olimpica`).checked
+    }
+
+    // *** OJO *** si ancho < largo, invertir los valores ***************
+
+    return data
+  }
 }
 
-  
-  
-  
+
