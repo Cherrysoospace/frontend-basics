@@ -69,6 +69,21 @@ export default class Socio {
     return this
   }
 
+  static #validateTelefono(telefono) {
+  if (!telefono || telefono.trim() === '') {
+    return { valid: false, message: 'El teléfono no puede estar vacío' }
+  }
+  
+  // Remover espacios y caracteres especiales para validar solo números
+  const telefonoClean = telefono.replace(/\D/g, '')
+  
+  if (telefonoClean.length !== 10) {
+    return { valid: false, message: 'El teléfono debe tener exactamente 10 dígitos' }
+  }
+  
+  return { valid: true, message: '' }
+}
+
   static async #addRow() {
     Socio.#currentOption = 'add'
     Socio.#modal = new Modal({
@@ -87,32 +102,38 @@ export default class Socio {
   }
 
   static async #add() {
-    try {
-      // obtener del formulario el objeto con los datos que se envían a la solicitud POST
-      const body = Socio.#getFormData()
-
-      // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
-      if (!Helpers.okForm('#form-socio')) {
-        return
-      }
-
-      // enviar la solicitud de creación con los datos del formulario
-      let response = await Helpers.fetchJSON(`${urlAPI}/socio`, {
-        method: 'POST',
-        body,
-      })
-
-      if (response.message === 'ok') {
-        Socio.#table.addRow(response.data) // agregar el socio a la tabla respectiva
-        Socio.#modal.remove()
-        Toast.show({ message: 'Registro agregado exitosamente' })
-      } else {
-        Toast.show({ message: 'No se pudo agregar el registro', mode: 'danger', error: response })
-      }
-    } catch (e) {
-      Toast.show({ message: 'Falló la creación del registro', mode: 'danger', error: e })
+  try {
+    // obtener del formulario el objeto con los datos que se envían a la solicitud POST
+    const body = Socio.#getFormData()
+    
+    // Si la validación personalizada falló, salir
+    if (!body) {
+      return
     }
+
+    // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
+    if (!Helpers.okForm('#form-socio')) {
+      return
+    }
+
+    // enviar la solicitud de creación con los datos del formulario
+    let response = await Helpers.fetchJSON(`${urlAPI}/socio`, {
+      method: 'POST',
+      body,
+    })
+
+    if (response.message === 'ok') {
+      Socio.#table.addRow(response.data) // agregar el socio a la tabla respectiva
+      Socio.#modal.remove()
+      Toast.show({ message: 'Registro agregado exitosamente' })
+    } else {
+      Toast.show({ message: 'No se pudo agregar el registro', mode: 'danger', error: response })
+    }
+  } catch (e) {
+    Toast.show({ message: 'Falló la creación del registro', mode: 'danger', error: e })
   }
+}
+
 
   static #editRowClick = async (e, cell) => {
     Socio.#currentOption = 'edit'
@@ -131,35 +152,40 @@ export default class Socio {
   }
 
   static async #edit(cell) {
-    try {
-      // obtener del formulario el objeto con los datos que se envían a la solicitud PATCH
-      const body = Socio.#getFormData()
-
-      // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
-      if (!Helpers.okForm('#form-socio')) {
-        return
-      }
-
-      // configurar la url para enviar la solicitud PATCH
-      const url = `${urlAPI}/socio/${cell.getRow().getData().id}`
-
-      // intentar enviar la solicitud de actualización
-      let response = await Helpers.fetchJSON(url, {
-        method: 'PATCH',
-        body,
-      })
-
-      if (response.message === 'ok') {
-        Toast.show({ message: 'Socio actualizado exitosamente' })
-        cell.getRow().update(response.data)
-        Socio.#modal.remove()
-      } else {
-        Toast.show({ message: 'Actualización fallida', mode: 'danger', error: response })
-      }
-    } catch (e) {
-      Toast.show({ message: 'Problemas al actualizar el registro', mode: 'danger', error: e })
+  try {
+    // obtener del formulario el objeto con los datos que se envían a la solicitud PATCH
+    const body = Socio.#getFormData()
+    
+    // Si la validación personalizada falló, salir
+    if (!body) {
+      return
     }
+
+    // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
+    if (!Helpers.okForm('#form-socio')) {
+      return
+    }
+
+    // configurar la url para enviar la solicitud PATCH
+    const url = `${urlAPI}/socio/${cell.getRow().getData().id}`
+
+    // intentar enviar la solicitud de actualización
+    let response = await Helpers.fetchJSON(url, {
+      method: 'PATCH',
+      body,
+    })
+
+    if (response.message === 'ok') {
+      Toast.show({ message: 'Socio actualizado exitosamente' })
+      cell.getRow().update(response.data)
+      Socio.#modal.remove()
+    } else {
+      Toast.show({ message: 'Actualización fallida', mode: 'danger', error: response })
+    }
+  } catch (e) {
+    Toast.show({ message: 'Problemas al actualizar el registro', mode: 'danger', error: e })
   }
+}
 
   static #deleteRowClick = async (e, cell) => {
     Socio.#currentOption = 'delete'
@@ -214,18 +240,113 @@ export default class Socio {
     }
   }
 
+  static #validateId(id) {
+  if (!id || id.trim() === '') {
+    return { valid: false, message: 'La identificación no puede estar vacía' }
+  }
+  
+  const idClean = id.trim()
+  // Permitir IDs de 5 caracteres o más (considerando el prefijo SO + 3 dígitos)
+  if (idClean.length < 5) {
+    return { valid: false, message: 'La identificación debe tener al menos 5 caracteres' }
+  }
+  
+  return { valid: true, message: '' }
+}
+
+// Método de validación para Nombre
+static #validateNombre(nombre) {
+  if (!nombre || nombre.trim() === '') {
+    return { valid: false, message: 'El nombre no puede estar en blanco' }
+  }
+  
+  const nombreClean = nombre.trim()
+  if (nombreClean.length < 1 || nombreClean.length > 50) {
+    return { valid: false, message: 'El nombre debe tener entre 1 y 50 caracteres' }
+  }
+  
+  return { valid: true, message: '' }
+}
+
+// Método de validación para Dirección
+static #validateDireccion(direccion) {
+  if (!direccion || direccion.trim() === '') {
+    return { valid: false, message: 'La dirección no puede estar en blanco' }
+  }
+  
+  const direccionClean = direccion.trim()
+  if (direccionClean.length < 10 || direccionClean.length > 200) {
+    return { valid: false, message: 'La dirección debe tener entre 10 y 200 caracteres' }
+  }
+  
+  return { valid: true, message: '' }
+}
+
+// Método auxiliar para mostrar errores de validación
+static #showValidationError(fieldName, message) {
+  Toast.show({ 
+    message: message, 
+    mode: 'danger' 
+  })
+  
+  // Enfocar el campo y marcarlo como inválido
+  const fieldInput = document.querySelector(`#${Socio.#modal.id} #${fieldName}`)
+  fieldInput.focus()
+  fieldInput.classList.add('is-invalid')
+  
+  // Quitar la clase de error después de que el usuario empiece a escribir
+  fieldInput.addEventListener('input', function() {
+    this.classList.remove('is-invalid')
+  }, { once: true })
+}
+
   /**
    * Recupera los datos del formulario y crea un objeto para ser retornado
    * @returns Un objeto con los datos del socio
    */
   static #getFormData() {
-    const data = {
-      id: document.querySelector(`#${Socio.#modal.id} #id`).value,
-      nombre: document.querySelector(`#${Socio.#modal.id} #nombre`).value,
-      telefono: document.querySelector(`#${Socio.#modal.id} #telefono`).value,
-      direccion: document.querySelector(`#${Socio.#modal.id} #direccion`).value,
-    }
-
-    return data
+  // Obtener valores del formulario
+  const id = document.querySelector(`#${Socio.#modal.id} #id`).value.trim()
+  const nombre = document.querySelector(`#${Socio.#modal.id} #nombre`).value.trim()
+  const telefono = document.querySelector(`#${Socio.#modal.id} #telefono`).value.trim()
+  const direccion = document.querySelector(`#${Socio.#modal.id} #direccion`).value.trim()
+  
+  // Validar ID/Identificación
+  const idValidation = Socio.#validateId(id)
+  if (!idValidation.valid) {
+    Socio.#showValidationError('id', idValidation.message)
+    return null
   }
+
+  // Validar Nombre
+  const nombreValidation = Socio.#validateNombre(nombre)
+  if (!nombreValidation.valid) {
+    Socio.#showValidationError('nombre', nombreValidation.message)
+    return null
+  }
+
+  // Validar Teléfono (tu validación existente)
+  const telefonoValidation = Socio.#validateTelefono(telefono)
+  if (!telefonoValidation.valid) {
+    Socio.#showValidationError('telefono', telefonoValidation.message)
+    return null
+  }
+
+  // Validar Dirección
+  const direccionValidation = Socio.#validateDireccion(direccion)
+  if (!direccionValidation.valid) {
+    Socio.#showValidationError('direccion', direccionValidation.message)
+    return null
+  }
+
+  // Si todas las validaciones pasaron, crear y retornar el objeto
+  const data = {
+    id: id,
+    nombre: nombre,
+    telefono: telefono,
+    direccion: direccion,
+  }
+
+  return data
+}
 }

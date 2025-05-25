@@ -65,6 +65,7 @@ export default class Instalacion {
         height: tableHeight, // establecer la altura de la tabla, esto habilita el DOM virtual y mejora drásticamente la velocidad de procesamiento
         data: response.data, // asignar los datos a la tabla
         layout: 'fitColumns', // ajustar columnas al ancho disponible
+        history: true,
         columns: [
           // definir las columnas de la tabla
           { formatter: editRowButton, width: 40, hozAlign: 'center', cellClick: Instalacion.#editRowClick },
@@ -123,7 +124,7 @@ export default class Instalacion {
         { caption: addButton, classes: 'btn btn-primary me-2', action: () => Instalacion.#add() },
         { caption: cancelButton, classes: 'btn btn-secondary', action: () => Instalacion.#modal.remove() },
       ],
-      doSomething: Instalacion.#displayDataOnForm,
+      doSomething: Instalacion.#displayDataOnForm, //se envía un callback
     })
 
     Instalacion.#modal.show()
@@ -134,6 +135,7 @@ export default class Instalacion {
     try {
       // obtener del formulario el objeto con los datos que se envían a la solicitud POST
       const body = Instalacion.#getFormData()
+      console.log(body)
 
       // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
       if (!Helpers.okForm('#form-instalacion')) {
@@ -278,7 +280,7 @@ export default class Instalacion {
     const data = {
       id: document.querySelector(`#${Instalacion.#modal.id} #id`).value,
       descripcion: document.querySelector(`#${Instalacion.#modal.id} #descripcion`).value,
-      ancho: Number(document.querySelector(`#${Instalacion.#modal.id} #ancho`).value),
+      ancho: Number(document.querySelector(`#${Instalacion.#modal.id} #ancho`).value), //
       largo: Number(document.querySelector(`#${Instalacion.#modal.id} #largo`).value),
     }
 
@@ -298,6 +300,12 @@ export default class Instalacion {
     }
 
     // *** OJO *** si ancho < largo, invertir los valores ***************
+    // Validar si ancho > largo, intercambiar valores
+    if (data.ancho > data.largo) {
+      const temp = data.ancho
+      data.ancho = data.largo
+      data.largo = temp
+    }
 
     return data
   }
