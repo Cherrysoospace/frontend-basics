@@ -272,43 +272,102 @@ export default class Instalacion {
     }
   }
 
-  /**
-   * Recupera los datos del formulario y crea un objeto para ser retornado
-   * @returns Un objeto con los datos del socio
-   */
-  static #getFormData() {
-    const data = {
-      id: document.querySelector(`#${Instalacion.#modal.id} #id`).value,
-      descripcion: document.querySelector(`#${Instalacion.#modal.id} #descripcion`).value,
-      ancho: Number(document.querySelector(`#${Instalacion.#modal.id} #ancho`).value), //
-      largo: Number(document.querySelector(`#${Instalacion.#modal.id} #largo`).value),
-    }
+ /**
+ * Recupera los datos del formulario y crea un objeto para ser retornado
+ * Incluye validaciones personalizadas para largo, ancho y descripción
+ * @returns Un objeto con los datos de la instalación
+ */
+static #getFormData() {
+  // Obtener referencias a los elementos del formulario
+  const idElement = document.querySelector(`#${Instalacion.#modal.id} #id`)
+  const descripcionElement = document.querySelector(`#${Instalacion.#modal.id} #descripcion`)
+  const anchoElement = document.querySelector(`#${Instalacion.#modal.id} #ancho`)
+  const largoElement = document.querySelector(`#${Instalacion.#modal.id} #largo`)
 
-    if (Instalacion.#mode == 'canchatennis') {
-      const selectTipos = document.querySelector(`#${Instalacion.#modal.id} #tipocancha`)
-      // agregar un validador personalizado para el selector del tipo de cancha
-      if (!selectTipos.value) {
-        selectTipos.setCustomValidity('Por favor, seleccione un tipo de cancha')
-      } else {
-        selectTipos.setCustomValidity('') // Restablece la validez si la selección es válida
-      }
-      data.tipoCancha = selectTipos.value
-    } else if (Instalacion.#mode == 'canchamultiproposito') {
-      data.graderia = document.querySelector(`#${Instalacion.#modal.id} #graderias`).checked
-    } else {
-      data.olimpica = document.querySelector(`#${Instalacion.#modal.id} #olimpica`).checked
-    }
+  // Obtener valores
+  const descripcion = descripcionElement.value.trim()
+  const ancho = Number(anchoElement.value)
+  const largo = Number(largoElement.value)
 
-    // *** OJO *** si ancho < largo, invertir los valores ***************
-    // Validar si ancho > largo, intercambiar valores
-    if (data.ancho > data.largo) {
-      const temp = data.ancho
-      data.ancho = data.largo
-      data.largo = temp
-    }
+  // *** VALIDACIONES PERSONALIZADAS ***
 
-    return data
+  // 1. Validación de DESCRIPCIÓN: requerido, entre 15 y 300 caracteres
+  if (!descripcion) {
+    descripcionElement.setCustomValidity('La descripción es requerida')
+  } else if (descripcion.length < 15) {
+    descripcionElement.setCustomValidity('La descripción debe tener al menos 15 caracteres')
+  } else if (descripcion.length > 300) {
+    descripcionElement.setCustomValidity('La descripción no puede exceder 300 caracteres')
+  } else {
+    descripcionElement.setCustomValidity('') // Válido
   }
+
+  // 2. Validación de ANCHO: requerido, entre 1.2 y 90 metros
+  if (!ancho || isNaN(ancho)) {
+    anchoElement.setCustomValidity('El ancho es requerido y debe ser un número válido')
+  } else if (ancho < 1.2) {
+    anchoElement.setCustomValidity('El ancho debe ser al menos 1.2 metros')
+  } else if (ancho > 90) {
+    anchoElement.setCustomValidity('El ancho no puede exceder 90 metros')
+  } else {
+    anchoElement.setCustomValidity('') // Válido
+  }
+
+  // 3. Validación de LARGO: requerido, entre 1.2 y 90 metros
+  if (!largo || isNaN(largo)) {
+    largoElement.setCustomValidity('El largo es requerido y debe ser un número válido')
+  } else if (largo < 1.2) {
+    largoElement.setCustomValidity('El largo debe ser al menos 1.2 metros')
+  } else if (largo > 90) {
+    largoElement.setCustomValidity('El largo no puede exceder 90 metros')
+  } else {
+    largoElement.setCustomValidity('') // Válido
+  }
+
+  // Crear objeto con los datos básicos
+  const data = {
+    id: idElement.value,
+    descripcion: descripcion,
+    ancho: ancho,
+    largo: largo,
+  }
+
+  // Validaciones específicas según el modo de instalación
+  if (Instalacion.#mode == 'canchatennis') {
+    const selectTipos = document.querySelector(`#${Instalacion.#modal.id} #tipocancha`)
+    // Validación para el selector del tipo de cancha
+    if (!selectTipos.value) {
+      selectTipos.setCustomValidity('Por favor, seleccione un tipo de cancha')
+    } else {
+      selectTipos.setCustomValidity('') // Restablece la validez si la selección es válida
+    }
+    data.tipoCancha = selectTipos.value
+  } else if (Instalacion.#mode == 'canchamultiproposito') {
+    data.graderia = document.querySelector(`#${Instalacion.#modal.id} #graderias`).checked
+  } else {
+    data.olimpica = document.querySelector(`#${Instalacion.#modal.id} #olimpica`).checked
+  }
+
+  // *** INTERCAMBIO AUTOMÁTICO DE VALORES ***
+  // Si ancho > largo, intercambiar valores (como estaba en el código original)
+  if (data.ancho > data.largo) {
+    const temp = data.ancho
+    data.ancho = data.largo
+    data.largo = temp
+    
+    // Actualizar los valores en el formulario para que el usuario vea el cambio
+    anchoElement.value = data.ancho
+    largoElement.value = data.largo
+    
+    // Opcional: mostrar un mensaje informativo al usuario
+    Toast.show({ 
+      message: 'Los valores de ancho y largo se intercambiaron automáticamente (ancho debe ser ≤ largo)', 
+      mode: 'info' 
+    })
+  }
+
+  return data
+}
 }
 
 

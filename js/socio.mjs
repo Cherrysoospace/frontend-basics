@@ -74,11 +74,10 @@ export default class Socio {
     return { valid: false, message: 'El teléfono no puede estar vacío' }
   }
   
-  // Remover espacios y caracteres especiales para validar solo números
-  const telefonoClean = telefono.replace(/\D/g, '')
+  const telefonoClean = telefono.trim()
   
-  if (telefonoClean.length !== 10) {
-    return { valid: false, message: 'El teléfono debe tener exactamente 10 dígitos' }
+  if (telefonoClean.length < 10 || telefonoClean.length > 100) {
+    return { valid: false, message: 'El teléfono debe tener entre 10 y 100 caracteres' }
   }
   
   return { valid: true, message: '' }
