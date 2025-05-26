@@ -316,48 +316,109 @@ Alquiler.#instalacionesList = Helpers.toOptionList({
     return true
   }
 
-  static async #add() {
-    try {
-      // obtener del formulario el objeto con los datos que se envían a la solicitud POST
-      const body = Alquiler.#getFormData()
+  static #verificarAlquilerExistente(body) {
+  // Obtener todos los datos actuales de la tabla
+  const datosTabla = Alquiler.#table.getData()
+  
+  // Buscar si existe un alquiler con exactamente los mismos datos
+  const alquilerExistente = datosTabla.find(alquiler => {
+    return alquiler.socio.id === body.socio.id &&
+           alquiler.instalacionDeportiva.id === body.instalacionDeportiva.id &&
+           alquiler.fechaHoraInicio === body.fechaHoraInicio &&
+           alquiler.fechaHoraFin === body.fechaHoraFin
+  })
+  
+  return alquilerExistente
+}
 
-      // Si getFormData devuelve null (por errores de validación), detener
-      if (!body) {
-        return
-      }
+ static async #add() {
+  try {
+    // obtener del formulario el objeto con los datos que se envían a la solicitud POST
+    const body = Alquiler.#getFormData()
 
-      // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
-      if (!Helpers.okForm('#form-alquiler')) {
-        return
-      }
-
-      // NUEVA VALIDACIÓN: Verificar todas las restricciones de fechas
-      const erroresFecha = Alquiler.#validarFechas(body.fechaHoraInicio, body.fechaHoraFin)
-      if (erroresFecha.length > 0) {
-        Toast.show({ 
-          message: 'Errores en las fechas:\n' + erroresFecha.join('\n'), 
-          mode: 'danger' 
-        })
-        return
-      }
-
-      // enviar la solicitud de creación con los datos del formulario
-      let response = await Helpers.fetchJSON(`${urlAPI}/alquiler`, {
-        method: 'POST',
-        body,
-      })
-
-      if (response.message === 'ok') {
-        Alquiler.#table.addRow(response.data) // agregar el alquiler a la tabla respectiva
-        Alquiler.#modal.remove()
-        Toast.show({ message: 'Registro agregado exitosamente' })
-      } else {
-        Toast.show({ message: 'No se pudo agregar el registro', mode: 'danger', error: response })
-      }
-    } catch (e) {
-      Toast.show({ message: 'Falló la creación del registro', mode: 'danger', error: e })
+    // Si getFormData devuelve null (por errores de validación), detener
+    if (!body) {
+      return
     }
+
+    // verificar si los datos cumplen con las restricciones indicadas en el formulario HTML
+    if (!Helpers.okForm('#form-alquiler')) {
+      return
+    }
+
+    // NUEVA VALIDACIÓN: Verificar todas las restricciones de fechas
+    const erroresFecha = Alquiler.#validarFechas(body.fechaHoraInicio, body.fechaHoraFin)
+    if (erroresFecha.length > 0) {
+      Toast.show({ 
+        message: 'Errores en las fechas:\n' + erroresFecha.join('\n'), 
+        mode: 'danger' 
+      })
+      return
+    }
+
+    // NUEVA FUNCIONALIDAD: Verificar si ya existe un alquiler idéntico
+    const alquilerExistente = Alquiler.#verificarAlquilerExistente(body)
+    
+    if (alquilerExistente) {
+      // Si existe un alquiler idéntico, mostrar mensaje informativo y cerrar modal
+      const fechaInicio = DateTime.fromISO(alquilerExistente.fechaHoraInicio).setLocale('es')
+      const fechaFin = DateTime.fromISO(alquilerExistente.fechaHoraFin).setLocale('es')
+      
+      Toast.show({ 
+        message: `Ya existe un alquiler con estos mismos datos:\n` +
+                `• ID: ${alquilerExistente.id}\n` +
+                `• Socio: ${alquilerExistente.socio.nombre}\n` +
+                `• Instalación: ${alquilerExistente.instalacionDeportiva.id} - ${alquilerExistente.instalacionDeportiva.tipoInstalacion}\n` +
+                `• Inicio: ${fechaInicio.toFormat("dd/MM/yyyy HH:mm")}\n` +
+                `• Fin: ${fechaFin.toFormat("dd/MM/yyyy HH:mm")}\n\n` +
+                `No se creará un registro duplicado.`,
+        mode: 'info',
+        duration: 8000 // Mostrar por más tiempo para que se pueda leer
+      })
+      
+      // Resaltar la fila existente en la tabla
+      const filaExistente = Alquiler.#table.getRows().find(row => 
+        row.getData().id === alquilerExistente.id
+      )
+      
+      if (filaExistente) {
+        // Desplazar la tabla hasta la fila y resaltarla temporalmente
+        filaExistente.scrollTo()
+        
+        // Agregar clase de resaltado temporal
+        const elemento = filaExistente.getElement()
+        elemento.style.backgroundColor = '#fff3cd'
+        elemento.style.border = '2px solid #ffc107'
+        
+        // Remover el resaltado después de 3 segundos
+        setTimeout(() => {
+          elemento.style.backgroundColor = ''
+          elemento.style.border = ''
+        }, 3000)
+      }
+      
+      Alquiler.#modal.remove()
+      return
+    }
+
+    // Si no existe duplicado, proceder con la creación normal
+    // enviar la solicitud de creación con los datos del formulario
+    let response = await Helpers.fetchJSON(`${urlAPI}/alquiler`, {
+      method: 'POST',
+      body,
+    })
+
+    if (response.message === 'ok') {
+      Alquiler.#table.addRow(response.data) // agregar el alquiler a la tabla respectiva
+      Alquiler.#modal.remove()
+      Toast.show({ message: 'Registro agregado exitosamente' })
+    } else {
+      Toast.show({ message: 'No se pudo agregar el registro', mode: 'danger', error: response })
+    }
+  } catch (e) {
+    Toast.show({ message: 'Falló la creación del registro', mode: 'danger', error: e })
   }
+}
 
   static #editRowClick = async (e, cell) => {
     Alquiler.#currentOption = 'edit'
